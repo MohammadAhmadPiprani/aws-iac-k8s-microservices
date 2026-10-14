@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  namespace: multi-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
+
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: BACKEND_URL
+        - name: APP_TITLE
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: APP_TITLE
+        volumeMounts:
+        - name: frontend-page-design
+          mountPath: /usr/share/nginx/html
+        - name: nginx-traffic
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        
+      volumes:
+      - name: frontend-page-design
+        configMap:
+          name : frontend-design
+      - name: nginx-traffic
+        configMap:
+          name : nginx-config
+        
+

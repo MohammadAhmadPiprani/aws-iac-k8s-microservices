@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deploy
+  namespace: multi-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend-container
+        image: python:3.9-slim
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
+
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: MYSQL_PASSWORD
+        - name: APP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: APP_PORT
+        command: ["/bin/sh"]
+        args: 
+          - "-c"
+          - |
+            pip install flask mysql-connector-python
+            python -c "
+            from flask import Flask, jsonify
+            import mysql.connector
+            import os
+            import time
+
+            app = Flask(__name__)
+
+            def get_db_connection():
+                max_retries = 5
+                for i in range(max_retries):
+                    try:
+                        connection = mysql.connector.connect(
+                            host=os.environ['DB_HOST'],
+                            port=int(os.environ['DB_PORT']),
+                            database=os.environ['DB_NAME'],
+                            user=os.environ['DB_USER'],
+                            password=os.environ['DB_PASSWORD']
+                        )
+                        return connection
+                    except Exception as e:
+                        print(f'Database connection attempt {i+1} failed: {e}')
+                        time.sleep(5)
+                return None
+
+            @app.route('/api/health')
+            def health():
+                return jsonify({'status': 'healthy', 'service': 'backend'})
+
+            @app.route('/api/data')
+            def get_data():
+                try:
+                    conn = get_db_connection()
+                    if conn:
+                        cursor = conn.cursor()
+                        cursor.execute('SELECT VERSION()')
+                        version = cursor.fetchone()
+                        conn.close()
+                        return jsonify({'message': 'Backend connected to database', 'db_version': version[0]})
+                    else:
+                        return jsonify({'error': 'Database connection failed'}), 500
+                except Exception as e:
+                    return jsonify({'error': str(e)}), 500
+
+            if __name__ == '__main__':
+                app.run(host='0.0.0.0', port=int(os.environ['APP_PORT']))
+            "
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 45
+          periodSeconds: 10 
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 90
+          periodSeconds: 30

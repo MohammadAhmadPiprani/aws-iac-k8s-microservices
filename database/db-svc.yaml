@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  namespace: multi-app
+spec:
+  type: ClusterIP
+  selector:
+      app: db
+  ports:
+  - port: 3306
+    targetPort: 3306
+    protocol: TCP
+  

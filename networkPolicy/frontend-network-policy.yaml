@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: multi-app
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend  # Targets your frontend pods
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - {} # Allows ingress traffic from any source (so users can visit your website)
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: backend # Only allows the frontend to talk out to the backend pods

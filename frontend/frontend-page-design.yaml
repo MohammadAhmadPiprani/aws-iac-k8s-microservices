@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-design
+  namespace:  multi-app
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <body><h1>MULTI TIER APP</h1></body>
+    </html>
+

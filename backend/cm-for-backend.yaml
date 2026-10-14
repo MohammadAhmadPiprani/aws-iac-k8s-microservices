@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: multi-app
+data:
+  DB_HOST: "db-svc"
+  DB_PORT: "3306"
+  DB_USER: "webapp_user"
+  DB_NAME: "webapp_db"
+  APP_ENV: "production"
+  APP_PORT: "5000"

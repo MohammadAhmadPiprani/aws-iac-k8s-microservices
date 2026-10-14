@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+  namespace: multi-app
+data:
+  DB_HOST: "db-svc"
+  DB_PORT: "3306"
+  MYSQL_USER: "webapp_user"
+  MYSQL_DATABASE: "webapp_db"
